@@ -225,7 +225,8 @@ class TSPSolver:
 				i = start
 
 				# Time: O(n^2), Space: O(n^2)
-				m, bound = self.init_matrix(cities, ncities)
+				# m, bound = self.init_matrix(cities, ncities)
+				m = self.init_matrix_no_reduce(cities, ncities)
 				while not foundTour:
 					if len(visited) == ncities:
 						for v in visited:
@@ -250,7 +251,7 @@ class TSPSolver:
 					m[j, i] = math.inf
 
 					# Time: O(n^2), Space: O(1)
-					m, bound = self.reduce(m)
+					# m, bound = self.reduce(m)
 
 					i = j
 			break
@@ -270,6 +271,7 @@ class TSPSolver:
 
 		if not foundTour:
 			results = self.defaultRandomTour()
+			results['time'] = end_time - start_time
 
 		return results
 
@@ -400,126 +402,126 @@ class TSPSolver:
 		m = self.init_matrix_no_reduce(cities, ncities)
 
 		hard_mode = False
-		if (m == m.T).all():
-			# Easy Mode
-			# If this block of code is reached it means the graph is undirected (cost of i to j == cost of j to i)
+		# if (m == m.T).all():
+		# Easy Mode
+		# If this block of code is reached it means the graph is undirected (cost of i to j == cost of j to i)
 
-			# G = undirected graph that only has one edge between every two vertices
-			G = nx.Graph()
+		# G = undirected graph that only has one edge between every two vertices
+		G = nx.Graph()
 
-			# This adds the edges to both G and MG
-			for i in range(ncities):
-				for j in range(ncities):
-					G.add_edge(i, j)
-					G.edges[i, j]['distance'] = m[i, j]
-		else:
-			# Hard Mode
-			# If this block of code is reached it means the graph is directed (cost of i to j != cost of j to i)
-			hard_mode = True
-
-			# Creates an undirected graph from a matrix represented directed graph
-			# makes an incoming and outcoming node for each of n nodes
-			G = nx.Graph()
-			MG = nx.MultiGraph() # Also makes a Multigraph, I was playing around with consolidating it into a Graph
-			for i in range(ncities):
-				for j in range(ncities):
-					i_out = f"{i}_out"
-					j_in = f"{j}_in"
-
-					G.add_edge(str(i), i_out)
-					G.edges[str(i), i_out]['distance'] = 0
-
-					G.add_edge(i_out, j_in)
-					G.edges[i_out, j_in]['distance'] = m[i, j]
-
-					G.add_edge(j_in, str(j))
-					G.edges[j_in, str(j)]['distance'] = 0
-
-					MG.add_edge(i, j)
-
-			for i, j, z in MG.edges:
-				if z == 0:
-					distance = m[i, j]
-				else:
-					distance = m[j, i]
-
-				MG.edges[i, j, z]['distance'] = distance
+		# This adds the edges to both G and MG
+		for i in range(ncities):
+			for j in range(ncities):
+				G.add_edge(i, j)
+				G.edges[i, j]['distance'] = m[i, j]
+		# else:
+		# 	# Hard Mode
+		# 	# If this block of code is reached it means the graph is directed (cost of i to j != cost of j to i)
+		# 	hard_mode = True
+		#
+		# 	# Creates an undirected graph from a matrix represented directed graph
+		# 	# makes an incoming and outcoming node for each of n nodes
+		# 	G = nx.Graph()
+		# 	MG = nx.MultiGraph() # Also makes a Multigraph, I was playing around with consolidating it into a Graph
+		# 	for i in range(ncities):
+		# 		for j in range(ncities):
+		# 			i_out = f"{i}_out"
+		# 			j_in = f"{j}_in"
+		#
+		# 			G.add_edge(str(i), i_out)
+		# 			G.edges[str(i), i_out]['distance'] = 0
+		#
+		# 			G.add_edge(i_out, j_in)
+		# 			G.edges[i_out, j_in]['distance'] = m[i, j]
+		#
+		# 			G.add_edge(j_in, str(j))
+		# 			G.edges[j_in, str(j)]['distance'] = 0
+		#
+		# 			MG.add_edge(i, j)
+		#
+		# 	for i, j, z in MG.edges:
+		# 		if z == 0:
+		# 			distance = m[i, j]
+		# 		else:
+		# 			distance = m[j, i]
+		#
+		# 		MG.edges[i, j, z]['distance'] = distance
 
 		# Find minimum spanning tree
 		T = nx.minimum_spanning_tree(G, weight='distance')
 
-		if hard_mode:
-			minG = nx.Graph()
-			for i, j, z in MG.edges:
-				i = str(i)
-				j = str(j)
-				minG.add_edge(j, i)
-
-			for i, j in minG.edges:
-				i = str(i)
-				j = str(j)
-
-				to = math.inf
-				fro = math.inf
-				if (i, j, 0) in MG.edges:
-					to = MG.edges[i, j, 0]['distance']
-				if (i, j, 1) in MG.edges:
-					fro = MG.edges[i, j, 1]['distance']
-
-				min_distance = min(to, fro)
-				minG.edges[i, j]['distance'] = min_distance
-
-			# This creates a new minimum spanning tree without the incoming and outgoing dummy nodes from before
-			parsedT = nx.Graph()
-			for i, j in T.edges:
-				i_match = re.search(r"(\d+)(_in)*(_out)*", i)
-				if i_match:
-					i = i_match.group(1)
-				j_match = re.search(r"(\d+)(_in)*(_out)*", j)
-				if j_match:
-					j = j_match.group(1)
-
-				if i != j:
-					parsedT.add_edge(i, j)
-
-			T = parsedT
+		# if hard_mode:
+		# 	minG = nx.Graph()
+		# 	for i, j, z in MG.edges:
+		# 		i = str(i)
+		# 		j = str(j)
+		# 		minG.add_edge(j, i)
+		#
+		# 	for i, j in minG.edges:
+		# 		i = str(i)
+		# 		j = str(j)
+		#
+		# 		to = math.inf
+		# 		fro = math.inf
+		# 		if (i, j, 0) in MG.edges:
+		# 			to = MG.edges[i, j, 0]['distance']
+		# 		if (i, j, 1) in MG.edges:
+		# 			fro = MG.edges[i, j, 1]['distance']
+		#
+		# 		min_distance = min(to, fro)
+		# 		minG.edges[i, j]['distance'] = min_distance
+		#
+		# 	# This creates a new minimum spanning tree without the incoming and outgoing dummy nodes from before
+		# 	parsedT = nx.Graph()
+		# 	for i, j in T.edges:
+		# 		i_match = re.search(r"(\d+)(_in)*(_out)*", i)
+		# 		if i_match:
+		# 			i = i_match.group(1)
+		# 		j_match = re.search(r"(\d+)(_in)*(_out)*", j)
+		# 		if j_match:
+		# 			j = j_match.group(1)
+		#
+		# 		if i != j:
+		# 			parsedT.add_edge(i, j)
+		#
+		# 	T = parsedT
 
 		# Find nodes in minimum spanning tree T which have an odd degree
 		odd_nodes = [v for v in T.nodes() if T.degree(v) % 2 == 1]
 
 		# Have to use the minG Graph for hard mode because it consolidates the paths to and fro into one
-		if hard_mode:
-			# Create a dummy value for negative distance so that 'max_weight_matching' finds the min
-			for i, j in minG.edges:
-				minG.edges[i, j]['neg_distance'] = - minG.edges[i, j]['distance']
+		# if hard_mode:
+		# 	# Create a dummy value for negative distance so that 'max_weight_matching' finds the min
+		# 	for i, j in minG.edges:
+		# 		minG.edges[i, j]['neg_distance'] = - minG.edges[i, j]['distance']
+		#
+		# 	# Find the minimum perfect matching for pairs of odd degree nodes
+		# 	matching = nx.max_weight_matching(minG.subgraph(odd_nodes), maxcardinality=True, weight='neg_distance')
+		# 	print('okay')
+		# else:
+		# Create a dummy value for negative distance so that 'max_weight_matching' finds the min
+		for i, j in G.edges:
+			G.edges[i, j]['neg_distance'] = - G.edges[i, j]['distance']
 
-			# Find the minimum perfect matching for pairs of odd degree nodes
-			matching = nx.max_weight_matching(minG.subgraph(odd_nodes), maxcardinality=True, weight='neg_distance')
-			print('okay')
-		else:
-			# Create a dummy value for negative distance so that 'max_weight_matching' finds the min
-			for i, j in G.edges:
-				G.edges[i, j]['neg_distance'] = - G.edges[i, j]['distance']
-
-			# Find the minimum perfect matching for pairs of odd degree nodes
-			matching = nx.max_weight_matching(G.subgraph(odd_nodes), maxcardinality=True, weight='neg_distance')
+		# Find the minimum perfect matching for pairs of odd degree nodes
+		matching = nx.max_weight_matching(G.subgraph(odd_nodes), maxcardinality=True, weight='neg_distance')
 
 		# New multigraph H we'll add the edges from T and the matched pairs to
 		H = nx.MultiGraph()
 
 
-		if hard_mode:
-			# Have to convert indices back to integers on hard mode
-			# (because they turn to strings when we add nodes i_in and i_out to each node i)
-			# Add edges from T and matching to multigraph H
-			H.add_nodes_from([int(x) for x in T.nodes])
-			H.add_edges_from([(int(x[0]), int(x[1])) for x in T.edges()])
-			H.add_edges_from([(int(x[0]), int(x[1])) for x in matching])
-		else:
-			# Add edges from T and matching to multigraph H
-			H.add_nodes_from(range(ncities))
-			H.add_edges_from(T.edges())
-			H.add_edges_from(matching)
+		# if hard_mode:
+		# 	# Have to convert indices back to integers on hard mode
+		# 	# (because they turn to strings when we add nodes i_in and i_out to each node i)
+		# 	# Add edges from T and matching to multigraph H
+		# 	H.add_nodes_from([int(x) for x in T.nodes])
+		# 	H.add_edges_from([(int(x[0]), int(x[1])) for x in T.edges()])
+		# 	H.add_edges_from([(int(x[0]), int(x[1])) for x in matching])
+		# else:
+		# Add edges from T and matching to multigraph H
+		H.add_nodes_from(range(ncities))
+		H.add_edges_from(T.edges())
+		H.add_edges_from(matching)
 
 		# Find a path that traverses each edge only once (eulerian circuit)
 		initial_tour = list(nx.eulerian_circuit(H, source=0))
